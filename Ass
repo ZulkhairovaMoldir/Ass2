@@ -1,0 +1,454 @@
+import java.util.Arrays;
+
+interface MyList<E> {
+    void add(E element);
+    void add(int index, E element);
+    E get(int index);
+    E remove(int index);
+    boolean remove(E element);
+    int size();
+    boolean isEmpty();
+    boolean contains(E element);
+    void clear();
+}
+
+class MyArrayList<E> implements MyList<E> {
+    private Object[] elements;
+    private int size;
+    private static final int DEFAULT_CAPACITY = 10;
+
+    public MyArrayList() {
+        this.elements = new Object[DEFAULT_CAPACITY];
+        this.size = 0;
+    }
+
+    @Override
+    public void add(E element) {
+        ensureCapacity();
+        elements[size++] = element;
+    }
+
+    @Override
+    public void add(int index, E element) {
+        if (index < 0 || index > size) {
+            throw new IndexOutOfBoundsException();
+        }
+        ensureCapacity();
+        System.arraycopy(elements, index, elements, index + 1, size - index);
+        elements[index] = element;
+        size++;
+    }
+
+    @Override
+    public E get(int index) {
+        if (index < 0 || index >= size) {
+            throw new IndexOutOfBoundsException();
+        }
+        return (E) elements[index];
+    }
+
+    @Override
+    public E remove(int index) {
+        if (index < 0 || index >= size) {
+            throw new IndexOutOfBoundsException();
+        }
+        E removedElement = (E) elements[index];
+        System.arraycopy(elements, index + 1, elements, index, size - index - 1);
+        elements[--size] = null;
+        return removedElement;
+    }
+
+    @Override
+    public boolean remove(E element) {
+        for (int i = 0; i < size; i++) {
+            if (elements[i].equals(element)) {
+                remove(i);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public int size() {
+        return size;
+    }
+
+    @Override
+    public boolean isEmpty() {
+        return size == 0;
+    }
+
+    @Override
+    public boolean contains(E element) {
+        for (int i = 0; i < size; i++) {
+            if (elements[i].equals(element)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public void clear() {
+        Arrays.fill(elements, null);
+        size = 0;
+    }
+
+    private void ensureCapacity() {
+        if (size == elements.length) {
+            int newCapacity = elements.length * 2;
+            elements = Arrays.copyOf(elements, newCapacity);
+        }
+    }
+}
+
+class MyLinkedList<E> implements MyList<E> {
+    private static class MyNode<E> {
+        E element;
+        MyNode<E> next;
+        MyNode<E> prev;
+
+        MyNode(E element, MyNode<E> prev, MyNode<E> next) {
+            this.element = element;
+            this.prev = prev;
+            this.next = next;
+        }
+    }
+
+    private MyNode<E> head;
+    private MyNode<E> tail;
+    private int size;
+
+    public MyLinkedList() {
+        this.head = null;
+        this.tail = null;
+        this.size = 0;
+    }
+
+    @Override
+    public void add(E element) {
+        add(size, element);
+    }
+
+    @Override
+    public void add(int index, E element) {
+        if (index < 0 || index > size) {
+            throw new IndexOutOfBoundsException();
+        }
+        if (index == 0) {
+            addFirst(element);
+        } else if (index == size) {
+            addLast(element);
+        } else {
+            MyNode<E> prevNode = getNode(index - 1);
+            MyNode<E> nextNode = prevNode.next;
+            MyNode<E> newNode = new MyNode<>(element, prevNode, nextNode);
+            prevNode.next = newNode;
+            nextNode.prev = newNode;
+            size++;
+        }
+    }
+
+    @Override
+    public E get(int index) {
+        if (index < 0 || index >= size) {
+            throw new IndexOutOfBoundsException();
+        }
+        MyNode<E> node = getNode(index);
+        return node.element;
+    }
+
+    @Override
+    public E remove(int index) {
+        if (index < 0 || index >= size) {
+            throw new IndexOutOfBoundsException();
+        }
+        if (index == 0) {
+            return removeFirst();
+        } else if (index == size - 1) {
+            return removeLast();
+        } else {
+            MyNode<E> nodeToRemove = getNode(index);
+            MyNode<E> prevNode = nodeToRemove.prev;
+            MyNode<E> nextNode = nodeToRemove.next;
+            prevNode.next = nextNode;
+            nextNode.prev = prevNode;
+            size--;
+            return nodeToRemove.element;
+        }
+    }
+
+    @Override
+    public boolean remove(E element) {
+        MyNode<E> current = head;
+        while (current != null) {
+            if (current.element.equals(element)) {
+                if (current == head) {
+                    removeFirst();
+                } else if (current == tail) {
+                    removeLast();
+                } else {
+                    MyNode<E> prevNode = current.prev;
+                    MyNode<E> nextNode = current.next;
+                    prevNode.next = nextNode;
+                    nextNode.prev = prevNode;
+                    size--;
+                }
+                return true;
+            }
+            current = current.next;
+        }
+        return false;
+    }
+
+    @Override
+    public int size() {
+        return size;
+    }
+
+    @Override
+    public boolean isEmpty() {
+        return size == 0;
+    }
+
+    @Override
+    public boolean contains(E element) {
+        MyNode<E> current = head;
+        while (current != null) {
+            if (current.element.equals(element)) {
+                return true;
+            }
+            current = current.next;
+        }
+        return false;
+    }
+
+    @Override
+    public void clear() {
+        head = null;
+        tail = null;
+        size = 0;
+    }
+
+    private MyNode<E> getNode(int index) {
+        if (index < 0 || index >= size) {
+            throw new IndexOutOfBoundsException();
+        }
+        MyNode<E> current = head;
+        for (int i = 0; i < index; i++) {
+            current = current.next;
+        }
+        return current;
+    }
+
+    private void addFirst(E element) {
+        MyNode<E> newNode = new MyNode<>(element, null, head);
+        if (isEmpty()) {
+            head = newNode;
+            tail = newNode;
+        } else {
+            head.prev = newNode;
+            head = newNode;
+        }
+        size++;
+    }
+
+    private void addLast(E element) {
+        MyNode<E> newNode = new MyNode<>(element, tail, null);
+        if (isEmpty()) {
+            head = newNode;
+            tail = newNode;
+        } else {
+            tail.next = newNode;
+            tail = newNode;
+        }
+        size++;
+    }
+
+    private E removeFirst() {
+        if (isEmpty()) {
+            throw new IllegalStateException("List is empty");
+        }
+        E removedElement = head.element;
+        if (size == 1) {
+            head = null;
+            tail = null;
+        } else {
+            head = head.next;
+            head.prev = null;
+        }
+        size--;
+        return removedElement;
+    }
+
+    private E removeLast() {
+        if (isEmpty()) {
+            throw new IllegalStateException("List is empty");
+        }
+        E removedElement = tail.element;
+        if (size == 1) {
+            head = null;
+            tail = null;
+        } else {
+            tail = tail.prev;
+            tail.next = null;
+        }
+        size--;
+        return removedElement;
+    }
+}
+
+class MyStack<E> {
+    private MyArrayList<E> list;
+
+    public MyStack() {
+        this.list = new MyArrayList<>();
+    }
+
+    public void push(E element) {
+        list.add(element);
+    }
+
+    public E pop() {
+        if (isEmpty()) {
+            throw new IllegalStateException("Stack is empty");
+        }
+        return list.remove(list.size() - 1);
+    }
+
+    public E peek() {
+        if (isEmpty()) {
+            throw new IllegalStateException("Stack is empty");
+        }
+        return list.get(list.size() - 1);
+    }
+
+    public boolean isEmpty() {
+        return list.isEmpty();
+    }
+
+    public int size() {
+        return list.size();
+    }
+
+    public void clear() {
+        list.clear();
+    }
+}
+
+class MyQueue<E> {
+    private MyArrayList<E> list;
+
+    public MyQueue() {
+        this.list = new MyArrayList<>();
+    }
+
+    public void enqueue(E element) {
+        list.add(element);
+    }
+
+    public E dequeue() {
+        if (isEmpty()) {
+            throw new IllegalStateException("Queue is empty");
+        }
+        return list.remove(0);
+    }
+
+    public E peek() {
+        if (isEmpty()) {
+            throw new IllegalStateException("Queue is empty");
+        }
+        return list.get(0);
+    }
+
+    public boolean isEmpty() {
+        return list.isEmpty();
+    }
+
+    public int size() {
+        return list.size();
+    }
+
+    public void clear() {
+        list.clear();
+    }
+}
+
+class MyMinHeap<E extends Comparable<E>> {
+    private MyArrayList<E> list;
+
+    public MyMinHeap() {
+        this.list = new MyArrayList<>();
+    }
+
+    public void insert(E element) {
+        list.add(element);
+        heapifyUp(list.size() - 1);
+    }
+
+    public E extractMin() {
+        if (isEmpty()) {
+            throw new IllegalStateException("Heap is empty");
+        }
+        E min = list.get(0);
+        E lastElement = list.remove(list.size() - 1);
+        if (!isEmpty()) {
+            list.set(0, lastElement);
+            heapifyDown(0);
+        }
+        return min;
+    }
+
+    public E peekMin() {
+        if (isEmpty()) {
+            throw new IllegalStateException("Heap is empty");
+        }
+        return list.get(0);
+    }
+
+    public boolean isEmpty() {
+        return list.isEmpty();
+    }
+
+    public int size() {
+        return list.size();
+    }
+
+    public void clear() {
+        list.clear();
+    }
+
+    private void heapifyUp(int index) {
+        int parentIndex = (index - 1) / 2;
+        while (index > 0 && list.get(index).compareTo(list.get(parentIndex)) < 0) {
+            swap(index, parentIndex);
+            index = parentIndex;
+            parentIndex = (index - 1) / 2;
+        }
+    }
+
+    private void heapifyDown(int index) {
+        int leftChildIndex = 2 * index + 1;
+        int rightChildIndex = 2 * index + 2;
+        int smallest = index;
+
+        if (leftChildIndex < list.size() && list.get(leftChildIndex).compareTo(list.get(smallest)) < 0) {
+            smallest = leftChildIndex;
+        }
+        if (rightChildIndex < list.size() && list.get(rightChildIndex).compareTo(list.get(smallest)) < 0) {
+            smallest = rightChildIndex;
+        }
+
+        if (smallest != index) {
+            swap(index, smallest);
+            heapifyDown(smallest);
+        }
+    }
+
+    private void swap(int i, int j) {
+        E temp = list.get(i);
+        list.set(i, list.get(j));
+        list.set(j, temp);
+    }
+}
